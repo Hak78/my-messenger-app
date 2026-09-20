@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق الدردشة - Messenger</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .chat-container { max-width: 600px; margin: auto; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; height: 80vh; }
+        .chat-header { background: #0084ff; color: white; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .message { padding: 10px 15px; border-radius: 15px; max-width: 70%; word-break: break-word; font-size: 14px; }
+        .message.system { background: #e4e6eb; color: #65676b; align-self: center; border-radius: 5px; font-size: 12px; }
+        .message.user { background: #0084ff; color: white; align-self: flex-start; }
+        .message.other { background: #e4e6eb; color: black; align-self: flex-end; }
+        .chat-input { display: flex; padding: 10px; background: #fff; border-top: 1px solid #ddd; }
+        .chat-input input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; font-size: 14px; }
+        .chat-input button { background: #0084ff; color: white; border: none; padding: 10px 20px; margin-right: 10px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+        .chat-input button:hover { background: #006dd9; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">محادثة فورية (Messenger)</div>
+    <div id="messages" class="chat-messages"></div>
+    <div class="chat-input">
+        <input type="text" id="messageText" placeholder="اكتب رسالتك هنا..." autocomplete="off" onkeypress="handleKeyPress(event)" />
+        <button onclick="sendMessage()">إرسال</button>
+    </div>
+</div>
+
+<script>
+    // إنشاء معرف عشوائي فريد لكل مستخدم يدخل الصفحة
+    const clientId = "User_" + Math.floor(Math.random() * 1000);
+    
+    // ضبط اتصال WebSocket (تأكد من تغيير العنوان ليطابق خادمك عند تشغيله)
+    // إذا كنت تشغله محلياً على هاتفك: ws://127.0.0.1:8000/ws/ + clientId
+    const ws = new WebSocket(`ws://${window.location.hostname}:8000/ws/${clientId}`);
+
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        const messagesDiv = document.getElementById('messages');
+        
+        const messageElement = document.createElement('div');
+        if (data.sender === "System") {
+            messageElement.className = "message system";
+            messageElement.textContent = data.message;
+        } else {
+            messageElement.className = (data.sender === clientId) ? "message user" : "message other";
+            messageElement.textContent = `${data.sender}: ${data.message}`;
+        }
+        
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    };
+
+    function sendMessage() {
+        const input = document.getElementById('messageText');
+        if (input.value.trim() !== "") {
+            ws.send(input.value);
+            input.value = '';
+        }
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    }
+</script>
+
+</body>
+</html>
